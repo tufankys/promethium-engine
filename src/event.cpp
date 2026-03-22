@@ -12,5 +12,6 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
             case SDLK_D: player.x++; break;
         }
     }
+    
     return SDL_APP_CONTINUE;
 }

@@ -2,8 +2,16 @@
 #define MAINLIB_HPP
 
 #include <string>
+#include <vector>
+#include <algorithm>
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
+
+extern SDL_Window* window;
+extern SDL_Renderer* renderer;
+
+extern std::vector<SDL_Texture*> textures;
+
 
 class M_TextureObject {
 private:
@@ -36,8 +44,55 @@ public:
 
 };
 
-inline void M_LoadTexture() {
-    //TODO
+
+
+extern M_TextureObject player;
+
+
+
+inline SDL_Texture *M_LoadTexture(SDL_Renderer* renderer, const char* filename) {
+    SDL_Texture* newTexture = NULL;
+    char *full_path = NULL;
+
+    if (SDL_asprintf(&full_path, "%s..\\sprites\\%s", SDL_GetBasePath(), filename) <= 0) {
+        SDL_Log("[!M_LoadTexture]: Path string creation failed for: %s , %s", filename, SDL_GetError());
+        return NULL;
+    }
+
+    SDL_Surface* surface = SDL_LoadPNG(full_path);
+    
+    if (!surface) {
+        SDL_Log("[!M_LoadTexture]: Could not load surface (%s): %s", full_path, SDL_GetError());
+    } else {
+        newTexture = SDL_CreateTextureFromSurface(renderer, surface);
+        if (!newTexture) {
+            SDL_Log("[!M_LoadTexture]: Could not create texture (%s): %s", filename, SDL_GetError());
+        } else {
+            SDL_SetStringProperty(SDL_GetTextureProperties(newTexture), "name", filename);
+            textures.push_back(newTexture);
+            SDL_Log("[M_LoadTexture]: Loaded texture: %s", filename);
+        }
+        SDL_DestroySurface(surface);
+    }
+
+    SDL_free(full_path);
+    
+    return newTexture;
+}
+
+inline SDL_Texture* M_FindTexture(const char* filename) {
+    for (SDL_Texture* tex : textures) {
+        if (tex) {
+            const char* texName = SDL_GetStringProperty(SDL_GetTextureProperties(tex), "name", NULL);
+            
+            if (texName && SDL_strcmp(texName, filename) == 0) {
+                return tex;
+            }
+        }
+    }
+    
+    SDL_Log("[!M_FindTexture]: Texture not found: %s", filename);
+    return NULL;
 }
 
 inline void M_SetDrawColor(SDL_Renderer *renderer, int r, int g, int b) {
