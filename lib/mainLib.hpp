@@ -1,5 +1,5 @@
-#ifndef MAIN_HPP
-#define MAIN_HPP
+#ifndef MAINLIB_HPP
+#define MAINLIB_HPP
 
 #include <string>
 #include <SDL3/SDL.h>
@@ -36,14 +36,17 @@ public:
 
 };
 
+inline void M_LoadTexture() {
+    //TODO
+}
 
-void M_SetDrawColor(SDL_Renderer *renderer, int r, int g, int b) {
+inline void M_SetDrawColor(SDL_Renderer *renderer, int r, int g, int b) {
      SDL_SetRenderDrawColor(renderer, r, g, b, SDL_ALPHA_OPAQUE);
 }
 
-void M_RenderDebugText(SDL_Renderer *renderer, int x, int y, const char* text) {
+inline void M_RenderDebugText(SDL_Renderer *renderer, int x, int y, const char* text) {
     SDL_RenderDebugText(renderer, x, y, text );
 }
 
 
-#endif
+#endif // MAINLIB_HPP
