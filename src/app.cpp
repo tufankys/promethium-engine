@@ -1,7 +1,8 @@
-#include "..\\lib\\app.hpp"
+#define SDL_MAIN_HANDLED
+#include "..\\lib\\R1\\objects.hpp"
 
-SDL_Window* window = NULL;
-SDL_Renderer* renderer = NULL;
+SDL_Window* window = nullptr;
+SDL_Renderer* renderer = nullptr;
 
 //run once at the start
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
@@ -20,8 +21,8 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     SDL_SetRenderLogicalPresentation(renderer, 640, 480, SDL_LOGICAL_PRESENTATION_LETTERBOX);
 
-
-    SDL_Texture* texture = M_LoadTexture(renderer, "sample.png");
+    loadTextures();
+    createObjects();
 
     return SDL_APP_CONTINUE;
 }
@@ -30,20 +31,32 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
 
 void SDL_AppQuit(void *appstate, SDL_AppResult result) {
-    for (auto& tex : textures) {
-        if (tex) {
-            SDL_DestroyTexture(tex);
-            tex = NULL;
-        }
-    }
-    textures.clear();
+    
     if (renderer) {
         SDL_DestroyRenderer(renderer);
-        renderer = NULL;
+        renderer = nullptr;
     }
     if (window) {
         SDL_DestroyWindow(window);
-        window = NULL;
+        window = nullptr;
     }
+
+
+    for (auto obj : M_RenderableList) {
+            delete obj;
+        }
+    M_RenderableList.clear();
+    SDL_Log("[SDL_AppQuit]: Cleaned up M_RenderableList");
+
+    for (auto& tex : M_TexturesList) {
+        if (tex) {
+            SDL_DestroyTexture(tex);
+            tex = nullptr;
+        }
+    }
+    M_TexturesList.clear();
+    SDL_Log("[SDL_AppQuit]: Cleaned up M_TexturesList");
+    
+    
     SDL_Quit();
 }

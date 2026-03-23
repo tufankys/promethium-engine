@@ -1,6 +1,6 @@
 //#define SDL_MAIN_USE_CALLBACKS 1
-//#define SDL_MAIN_HANDLED
-#include "..\\lib\\app.hpp"
+#define SDL_MAIN_HANDLED
+#include "..\\lib\\R1\\objects.hpp"
 
 int main(int argc, char* argv[]) {
     //SDL_SetMainReady();
@@ -9,6 +9,7 @@ int main(int argc, char* argv[]) {
     if (SDL_AppInit(&appstate, argc, argv) != SDL_APP_CONTINUE) {
         return -1;
     }
+
 
     SDL_Event event;
     bool running = true;
