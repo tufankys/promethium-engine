@@ -5,7 +5,9 @@
       "includePath": [
         "${workspaceFolder}/**",
         "D:/Programlar/SDL/x86_64-w64-mingw32/include",
-        "D:/Programlar/SDL/x86_64-w64-mingw32/lib"
+        "D:/Programlar/SDL/x86_64-w64-mingw32/lib",
+        "D:/Programlar/SDL3_ttf/x86_64-w64-mingw32/include",
+        "D:/Programlar/SDL3_ttf/x86_64-w64-mingw32/lib"
       ],
       "defines": [],
       "compilerPath": "gcc",

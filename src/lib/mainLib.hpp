@@ -8,17 +8,36 @@
 #include <cstring>
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
+#include <SDL3_ttf/SDL_ttf.h>
 
 //definitions
-extern SDL_Window* window;
-extern SDL_Renderer* renderer;
+#define WINDOW_WIDTH 1920
+#define WINDOW_HEIGHT 1080
+#define WINDOW_NAME "Promethium Engine"
+#define TEXT_SIZE 33
+#define TEXT_COLOR (SDL_Color){255,255,255,255}
+
+inline SDL_Window* window = nullptr;
+inline SDL_Renderer* renderer = nullptr;
+inline TTF_Font* font = nullptr;
+
+inline bool running = true;
 
 class M_Renderable;
+class M_TextureObject;
+class M_TextObject;
 
 inline std::vector<M_Renderable*> M_RenderableList = {};
 inline std::vector<SDL_Texture*> M_TexturesList = {};
-//
 
+
+SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]);
+SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event);
+SDL_AppResult SDL_AppIterate(void *appstate);
+void SDL_AppQuit(void *appstate, SDL_AppResult result);
+
+
+//
 
 
 //classes
@@ -60,60 +79,39 @@ public:
 
 };
 
-
-//TextObject Class
-class M_TextObject : public M_Renderable {
+//TextureObject Class
+class M_TextObject{
 public:
-    std::string text;
-    SDL_Texture* fontAtlas; // grid
-    int charWidth;          // 16
-    int charHeight;         // 16
+    SDL_Texture* texture;
+    SDL_FRect dst_rect;
+    bool willRender = true;
 
-    M_TextObject(int inputX, int inputY, int inputW, int inputH, 
-                 SDL_Texture* inputFont, std::string inputText)
-        : M_Renderable(inputX, inputY, inputW, inputH), 
-          fontAtlas(inputFont), text(inputText) {
-        
-        // Varsayılan karakter boyutları (Grid yapına göre bunları ayarla)
-        charWidth = 16; 
-        charHeight = 16;
-    }
+    M_TextObject(SDL_Renderer* iRenderer, int inputX, int inputY, const char* iText) {
+        SDL_Surface* surface = TTF_RenderText_Blended(font, iText, 0, TEXT_COLOR);
 
-    void render(SDL_Renderer* iRenderer) override {
-        if (!willRender || !fontAtlas) return;
-
-        updateRect();
-
-        int charsPerRow = 16; // PNG'deki bir satırda bulunan karakter sayısı
-
-        for (size_t i = 0; i < text.length(); ++i) {
-            // 1. Karakterin ASCII değerini al
-            int ascii = (unsigned char)text[i];
-            
-            // Eğer atlasın 32. karakterden (Space) başlıyorsa ofset ekle:
-            // int index = ascii - 32; 
-            int index = ascii - 32; 
-
-            // 2. Kaynak (Source) Koordinatları: Grid üzerindeki yer
-            SDL_FRect src_rect;
-            src_rect.x = (float)((index % charsPerRow) * charWidth);
-            src_rect.y = (float)((index / charsPerRow) * charHeight);
-            src_rect.w = (float)charWidth;
-            src_rect.h = (float)charHeight;
-
-            // 3. Hedef (Destination) Koordinatları: Ekranda nereye çizilecek?
-            // Her karakteri i kadar sağa kaydırıyoruz
-            SDL_FRect char_dst_rect;
-            char_dst_rect.x = dst_rect.x + (i * (dst_rect.w / text.length())); // Basit ölçekleme
-            char_dst_rect.y = dst_rect.y;
-            char_dst_rect.w = (float)(dst_rect.w / text.length()); // Harf genişliği
-            char_dst_rect.h = dst_rect.h;
-
-            // Çizim yap
-            SDL_RenderTexture(iRenderer, fontAtlas, &src_rect, &char_dst_rect);
+        if (!surface) {
+                SDL_Log("[!M_TextObject]: Could not create surface (%s): %s", iText, SDL_GetError());
+            } else {
+                texture = SDL_CreateTextureFromSurface(iRenderer, surface);
+                if (!texture) {
+                    SDL_Log("[!M_TextObject]: Could not create texture from surface (%s): %s", iText, SDL_GetError());
+                } else {
+                    //SDL_SetStringProperty(SDL_GetTextureProperties(newTexture), "name", filename);
+                    //M_TexturesList.push_back(newTexture);
+                    dst_rect.w = surface->w;
+                    dst_rect.h = surface->h;
+                    SDL_Log("[M_TextObject]: Created texture: %s", iText);
+            }
+            SDL_DestroySurface(surface);
+            }
         }
+        
+    void render(SDL_Renderer* iRenderer) {
+        SDL_RenderTexture(iRenderer, texture, nullptr, &dst_rect); 
     }
+
 };
+
 //
 
 
@@ -126,7 +124,7 @@ inline SDL_Texture *M_LoadTexture(SDL_Renderer* iRenderer, const char* filename)
     SDL_Texture* newTexture = nullptr;
     char *full_path = nullptr;
 
-    if (SDL_asprintf(&full_path, "%s..\\sprites\\%s", SDL_GetBasePath(), filename) <= 0) {
+    if (SDL_asprintf(&full_path, "%s..\\assets\\sprites\\%s", SDL_GetBasePath(), filename) <= 0) {
         SDL_Log("[!M_LoadTexture]: Path string creation failed for: %s , %s", filename, SDL_GetError());
         return nullptr;
     }
@@ -152,6 +150,7 @@ inline SDL_Texture *M_LoadTexture(SDL_Renderer* iRenderer, const char* filename)
     return newTexture;
 }
 
+
 inline SDL_Texture* M_FindTexture(const char* filename) {
     for (SDL_Texture* tex : M_TexturesList) {
         if (tex) {
@@ -168,21 +167,15 @@ inline SDL_Texture* M_FindTexture(const char* filename) {
 }
 
 inline M_TextureObject* M_CreateTextureObject(int x, int y, int w, int h, const char* filename) {
-    SDL_Log("[M_CreateTextureObject]: Creating object: %s", filename);
+    SDL_Log("[M_CreateTextureObject]: Creating TEXTURE object: %s", filename);
     return new M_TextureObject(x, y, w, h, M_FindTexture(filename));
 }
 
-inline M_TextObject* M_CreateTextObject(int x, int y, int w, int h, const char* fontFilename, const std::string& text) {
-    SDL_Log("[M_CreateTextObject]: Creating text object with font: %s", fontFilename);
-    SDL_Texture* fontAtlas = M_FindTexture(fontFilename);
-    
-    if (!fontAtlas) {
-        SDL_Log("[M_CreateTextObject] ERROR: Font texture could not be found or loaded: %s", fontFilename);
-        return nullptr;
-    }
-
-    return new M_TextObject(x, y, w, h, fontAtlas, text);
+inline M_TextObject* M_CreateTextObject(SDL_Renderer* iRenderer,int x, int y, const char* iText) {
+    SDL_Log("[M_CreateTextObject]: Creating TEXT object: %s", iText);
+    return new M_TextObject(iRenderer, x, y, iText);
 }
+
 
 inline void M_SetDrawColor(SDL_Renderer *iRenderer, int r, int g, int b) {
      SDL_SetRenderDrawColor(iRenderer, r, g, b, SDL_ALPHA_OPAQUE);

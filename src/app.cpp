@@ -1,28 +1,35 @@
 #define SDL_MAIN_HANDLED
-#include "..\\lib\\R1\\objects.hpp"
-
-SDL_Window* window = nullptr;
-SDL_Renderer* renderer = nullptr;
+#include ".\\lib\\R1\\ring1.hpp"
 
 //run once at the start
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
-    SDL_SetAppMetadata("Promethium Engine", "1.0", "com.promethium-engine");
+    //SDL_SetAppMetadata("Promethium Engine", "1.0", "com.promethium-engine");
 
     if (!SDL_Init(SDL_INIT_VIDEO)) { 
         SDL_Log("[!SDL_AppInit]: SDL_Init error: %s", SDL_GetError());
         return SDL_APP_FAILURE;
     }
 
-    if (!SDL_CreateWindowAndRenderer("Promethium Engine", 640, 480, SDL_WINDOW_RESIZABLE, &window, &renderer)) {
-        SDL_Log("[!SDL_AppInit]: Couldn't create window/renderer: %s", SDL_GetError());
+    if (!TTF_Init()) {
+        SDL_Log("[!SDL_AppInit]: TTF_Init error: %s", SDL_GetError());
         return SDL_APP_FAILURE;
     }
 
-    SDL_SetRenderLogicalPresentation(renderer, 640, 480, SDL_LOGICAL_PRESENTATION_LETTERBOX);
+    if (!SDL_CreateWindowAndRenderer(WINDOW_NAME, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_RESIZABLE, &window, &renderer)) {
+        SDL_Log("[!SDL_AppInit]: Couldn't create window and renderer: %s", SDL_GetError());
+        return SDL_APP_FAILURE;
+    }
 
-    loadTextures();
-    createObjects();
+    font = TTF_OpenFont("..\\assets\\fonts\\comic.ttf", 16);
+    if (!font) {
+        SDL_Log("[!SDL_AppInit]: Couldn't create font: %s", SDL_GetError());
+        return SDL_APP_FAILURE;
+    }
+
+    SDL_SetRenderLogicalPresentation(renderer, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_LOGICAL_PRESENTATION_LETTERBOX);
+    
+    R1_AppInit();
 
     return SDL_APP_CONTINUE;
 }
@@ -41,22 +48,13 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
         window = nullptr;
     }
 
-
-    for (auto obj : M_RenderableList) {
-            delete obj;
-        }
-    M_RenderableList.clear();
-    SDL_Log("[SDL_AppQuit]: Cleaned up M_RenderableList");
-
-    for (auto& tex : M_TexturesList) {
-        if (tex) {
-            SDL_DestroyTexture(tex);
-            tex = nullptr;
-        }
+    if (font) {
+        TTF_CloseFont(font);
+        font = nullptr;
     }
-    M_TexturesList.clear();
-    SDL_Log("[SDL_AppQuit]: Cleaned up M_TexturesList");
+
+    R1_AppQuit();
     
-    
+    TTF_Quit();
     SDL_Quit();
 }

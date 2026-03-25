@@ -1,7 +1,7 @@
 @echo off
 
-set INCLUDE=-I "..\lib" -I "D:\Programlar\SDL\x86_64-w64-mingw32\include"
-set LIBS=-L "D:\Programlar\SDL\x86_64-w64-mingw32\lib" -lSDL3
+set INCLUDE=-I "..\src\lib" -I "D:\Programlar\SDL\x86_64-w64-mingw32\include" -I "D:\Programlar\SDL3_ttf\x86_64-w64-mingw32\include"
+set LIBS=-L "D:\Programlar\SDL\x86_64-w64-mingw32\lib"  -L "D:\Programlar\SDL3_ttf\x86_64-w64-mingw32\lib" -lSDL3 -lSDL3_ttf
 
 g++ -c ..\src\main.cpp -o .\o\main.o %INCLUDE%
 g++ -c ..\src\app.cpp -o .\o\app.o %INCLUDE%
